@@ -1,0 +1,20 @@
+{
+  "name": "filaxy-watch",
+  "interface": {
+    "displayName": "filaxy-watch"
+  },
+  "plugins": [
+    {
+      "name": "filaxy-watch",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/othmarodev/Filaxy-whatch_skill_for_claude.git"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

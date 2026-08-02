@@ -1,0 +1,43 @@
+{
+  "name": "filaxy-watch",
+  "version": "0.2.0",
+  "description": "Let Claude watch a video. Downloads with yt-dlp, extracts auto-scaled frames with ffmpeg, pulls captions or falls back to Whisper, and hands frames + transcript to Claude so it can answer questions about the video.",
+  "author": {
+    "name": "Othmaro Fallas Rojas"
+  },
+  "homepage": "https://github.com/othmarodev/Filaxy-whatch_skill_for_claude",
+  "repository": "https://github.com/othmarodev/Filaxy-whatch_skill_for_claude",
+  "license": "MIT",
+  "keywords": [
+    "video",
+    "watch",
+    "youtube",
+    "vimeo",
+    "tiktok",
+    "transcription",
+    "whisper",
+    "yt-dlp",
+    "ffmpeg",
+    "multimodal",
+    "frames"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "filaxy-watch",
+    "shortDescription": "Give Claude a video input — paste a URL or path and ask about it.",
+    "longDescription": "filaxy-watch adds a skill that lets the agent watch any video: it downloads with yt-dlp, extracts auto-scaled frames with ffmpeg, pulls a timestamped transcript from native captions (or the Whisper API as a fallback), and hands frames + transcript to the model so it can answer questions grounded in what's actually on screen and in the audio.",
+    "developerName": "Othmaro Fallas Rojas",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "websiteURL": "https://github.com/othmarodev/Filaxy-whatch_skill_for_claude",
+    "defaultPrompt": [
+      "/filaxy-watch https://youtu.be/dQw4w9WgXcQ what happens at the 30 second mark?",
+      "/filaxy-watch ~/Movies/screen-recording.mp4 when does the UI break?",
+      "/filaxy-watch https://youtu.be/<long-talk> summarize this"
+    ],
+    "brandColor": "#7C3AED"
+  }
+}

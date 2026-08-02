@@ -1,0 +1,12 @@
+{
+  "name": "filaxy-watch",
+  "version": "0.2.0",
+  "description": "Let Claude watch a video. Downloads with yt-dlp, extracts auto-scaled frames with ffmpeg, pulls captions or falls back to Whisper, and hands frames + transcript to Claude so it can answer questions about the video.",
+  "author": {
+    "name": "Othmaro Fallas Rojas"
+  },
+  "homepage": "https://github.com/othmarodev/Filaxy-whatch_skill_for_claude",
+  "repository": "https://github.com/othmarodev/Filaxy-whatch_skill_for_claude",
+  "license": "MIT",
+  "keywords": ["video", "watch", "youtube", "vimeo", "tiktok", "transcription", "whisper", "yt-dlp", "ffmpeg", "multimodal", "frames"]
+}

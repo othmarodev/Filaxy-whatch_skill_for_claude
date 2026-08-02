@@ -1,0 +1,21 @@
+{
+  "name": "filaxy-watch",
+  "metadata": {
+    "description": "Give Claude a video input. /filaxy-watch downloads, extracts frames, transcribes, and hands it all to Claude."
+  },
+  "owner": {
+    "name": "Othmaro Fallas Rojas"
+  },
+  "plugins": [
+    {
+      "name": "filaxy-watch",
+      "description": "Watch a video (URL or local path). Downloads with yt-dlp, extracts frames with ffmpeg, transcribes via captions or Whisper.",
+      "author": {
+        "name": "Othmaro Fallas Rojas"
+      },
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/othmarodev/Filaxy-whatch_skill_for_claude"
+    }
+  ]
+}

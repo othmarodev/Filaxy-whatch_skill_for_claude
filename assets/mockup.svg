@@ -1,0 +1,126 @@
+<svg viewBox="0 0 1080 700" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+
+    <!-- reusable "mini app screenshot" building blocks -->
+    <g id="chrome">
+      <rect x="0" y="0" width="176" height="118" rx="8" fill="#F1F5F9"/>
+      <rect x="0" y="0" width="176" height="16" rx="8" fill="#E2E8F0"/>
+      <circle cx="9" cy="8" r="2.6" fill="#FF5F56"/>
+      <circle cx="18" cy="8" r="2.6" fill="#FFBD2E"/>
+      <circle cx="27" cy="8" r="2.6" fill="#27C93F"/>
+      <rect x="44" y="5" width="120" height="6" rx="3" fill="#CBD5E1"/>
+    </g>
+  </defs>
+
+  <!-- window -->
+  <rect x="20" y="20" width="1040" height="660" rx="18" fill="#0B0D12" filter="url(#shadow)"/>
+  <rect x="20.5" y="20.5" width="1039" height="659" rx="17.5" fill="none" stroke="url(#brand)" stroke-opacity="0.5"/>
+
+  <!-- titlebar -->
+  <rect x="20" y="20" width="1040" height="46" rx="18" fill="#12141C"/>
+  <rect x="20" y="48" width="1040" height="18" fill="#12141C"/>
+  <circle cx="46" cy="43" r="6" fill="#FF5F56"/>
+  <circle cx="66" cy="43" r="6" fill="#FFBD2E"/>
+  <circle cx="86" cy="43" r="6" fill="#27C93F"/>
+  <text x="540" y="48" text-anchor="middle" fill="#9CA3AF" font-size="14">Claude Code — Filaxy Watch</text>
+
+  <!-- user bubble -->
+  <rect x="330" y="96" width="690" height="64" rx="14" fill="#1E2230"/>
+  <text x="990" y="122" text-anchor="end" fill="#7DD3FC" font-size="15" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">/filaxy-watch https://youtu.be/demo123</text>
+  <text x="990" y="146" text-anchor="end" fill="#E5E7EB" font-size="15">what breaks near the 0:30 mark?</text>
+
+  <!-- progress steps -->
+  <text x="60" y="200" fill="#6B7280" font-size="13" font-family="ui-monospace,monospace">[filaxy-watch] captions ✓ · extracting frames (detail=efficient) · transcribing audio…</text>
+
+  <!-- frames row label -->
+  <text x="60" y="240" fill="#9CA3AF" font-size="14" font-weight="600">Extracted frames — a real UI walkthrough, snapshot by snapshot</text>
+
+  <!-- FRAME 1 — t=00:05 normal state -->
+  <g transform="translate(60,256)">
+    <use href="#chrome"/>
+    <rect x="14" y="26" width="148" height="78" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="24" y="36" width="70" height="7" rx="3" fill="#334155"/>
+    <rect x="24" y="50" width="110" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="24" y="60" width="90" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="106" y="82" width="42" height="16" rx="4" fill="#7C3AED"/>
+    <text x="127" y="93.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Save</text>
+  </g>
+
+  <!-- FRAME 2 — t=00:14 form filling -->
+  <g transform="translate(252,256)">
+    <use href="#chrome"/>
+    <rect x="14" y="26" width="148" height="78" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="24" y="34" width="128" height="14" rx="4" fill="#F1F5F9" stroke="#CBD5E1"/>
+    <rect x="24" y="54" width="128" height="14" rx="4" fill="#F1F5F9" stroke="#CBD5E1"/>
+    <rect x="24" y="74" width="60" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="100" y="82" width="48" height="16" rx="4" fill="#7C3AED"/>
+    <text x="124" y="93.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Save</text>
+  </g>
+
+  <!-- FRAME 3 — t=00:21 button drifting toward the edge -->
+  <g transform="translate(444,256)">
+    <use href="#chrome"/>
+    <rect x="14" y="26" width="148" height="78" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="24" y="36" width="90" height="7" rx="3" fill="#334155"/>
+    <rect x="24" y="50" width="120" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="24" y="60" width="120" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="128" y="82" width="46" height="16" rx="4" fill="#F59E0B"/>
+    <text x="151" y="93.5" text-anchor="middle" fill="#1F2937" font-size="8" font-weight="700">Save</text>
+  </g>
+
+  <!-- FRAME 4 — t=00:28 overflow bug appears -->
+  <g transform="translate(636,256)">
+    <use href="#chrome"/>
+    <rect x="14" y="26" width="148" height="78" rx="6" fill="#FFFFFF" stroke="#EF4444" stroke-width="1.5"/>
+    <rect x="24" y="36" width="90" height="7" rx="3" fill="#334155"/>
+    <rect x="24" y="50" width="120" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="24" y="60" width="120" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="140" y="82" width="46" height="16" rx="4" fill="#EF4444"/>
+    <text x="163" y="93.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Save</text>
+    <path d="M162,90 L176,90" stroke="#EF4444" stroke-width="2" stroke-dasharray="2,2"/>
+  </g>
+
+  <!-- FRAME 5 — t=00:33 selected frame Claude points to -->
+  <g transform="translate(828,256)">
+    <use href="#chrome"/>
+    <rect x="14" y="26" width="148" height="78" rx="6" fill="#FFFFFF" stroke="#EF4444" stroke-width="1.5"/>
+    <rect x="24" y="36" width="90" height="7" rx="3" fill="#334155"/>
+    <rect x="24" y="50" width="120" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="24" y="60" width="120" height="5" rx="2.5" fill="#CBD5E1"/>
+    <rect x="142" y="82" width="46" height="16" rx="4" fill="#EF4444"/>
+    <text x="165" y="93.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Save</text>
+    <circle cx="176" cy="90" r="12" fill="none" stroke="#EF4444" stroke-width="2"/>
+    <rect x="0" y="0" width="176" height="118" rx="8" fill="none" stroke="#38BDF8" stroke-width="3"/>
+  </g>
+
+  <g fill="#E5E7EB" font-size="12" font-family="ui-monospace,monospace">
+    <text x="70"  y="386">t=00:05</text>
+    <text x="262" y="386">t=00:14</text>
+    <text x="454" y="386">t=00:21</text>
+    <text x="646" y="386">t=00:28</text>
+    <text x="838" y="386">t=00:33 ★</text>
+  </g>
+
+  <!-- transcript box -->
+  <text x="60" y="428" fill="#9CA3AF" font-size="14" font-weight="600">Transcript</text>
+  <rect x="60" y="440" width="944" height="70" rx="10" fill="#12141C"/>
+  <text x="76" y="464" fill="#9CA3AF" font-size="13" font-family="ui-monospace,monospace">[00:26] "...and right here you can see the button start to overflow the card..."</text>
+  <text x="76" y="486" fill="#6B7280" font-size="13" font-family="ui-monospace,monospace">[00:31] "...it's clearly broken in this part of the screen."</text>
+
+  <!-- Claude answer bubble -->
+  <rect x="60" y="530" width="760" height="112" rx="14" fill="#1B1030" stroke="url(#brand)" stroke-width="1.5"/>
+  <text x="84" y="558" fill="#C4B5FD" font-size="13" font-weight="700">Claude</text>
+  <text x="84" y="584" fill="#E5E7EB" font-size="14">I saw the frame at 0:28 (marked ★ above): the "Save" button spills</text>
+  <text x="84" y="606" fill="#E5E7EB" font-size="14">outside the card container. The audio at 0:26 confirms it —</text>
+  <text x="84" y="628" fill="#E5E7EB" font-size="14">it's an overflow issue, not a z-index bug.</text>
+
+  <!-- footer -->
+  <text x="540" y="676" text-anchor="middle" fill="#4B5563" font-size="12">Filaxy Watch — gives Claude eyes and ears to watch any video</text>
+</svg>
