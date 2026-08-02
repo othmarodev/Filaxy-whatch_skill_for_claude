@@ -1,8 +1,8 @@
 ---
 name: filaxy-watch
-version: "0.2.0"
-description: Watch a video (URL or local path). Downloads with yt-dlp, extracts auto-scaled frames with ffmpeg, pulls the transcript from captions (or Whisper API fallback), and hands the result to Claude so it can answer questions about what's in the video.
-argument-hint: "<video-url-or-path> [question]"
+version: "0.3.0"
+description: Watch one or more videos (URL or local path). Downloads with yt-dlp (cached across repeat asks about the same link), extracts auto-scaled frames with ffmpeg (live progress), pulls the transcript from captions (or Whisper API fallback), and hands the result to Claude so it can answer questions about what's in the video.
+argument-hint: "<video-url-or-path> [video-url-or-path...] [question]"
 allowed-tools: Bash, Read, AskUserQuestion
 homepage: https://github.com/othmarodev/Filaxy-whatch_skill_for_claude
 repository: https://github.com/othmarodev/Filaxy-whatch_skill_for_claude
@@ -131,17 +131,20 @@ Within a single session, you can skip Step 0 on follow-up `/filaxy-watch` calls 
 
 ## How to invoke
 
-**Step 1 — parse the user input.** Separate the video source (URL or path) from any question the user asked. Example: `/filaxy-watch https://youtu.be/abc what language is this in?` → source = `https://youtu.be/abc`, question = `what language is this in?`.
+**Step 1 — parse the user input.** Separate the video source(s) (URL or path) from any question the user asked. Example: `/filaxy-watch https://youtu.be/abc what language is this in?` → source = `https://youtu.be/abc`, question = `what language is this in?`. The user may hand you more than one source at once ("watch these two videos and compare them") — pass every source as its own positional argument.
 
-**Step 2 — run the watch script.** Pass the source verbatim. Do not shell-escape it yourself beyond normal quoting:
+**Step 2 — run the watch script.** Pass the source(s) verbatim. Do not shell-escape them yourself beyond normal quoting:
 
 ```bash
 python3 "${SKILL_DIR}/scripts/watch.py" "<source>"
+python3 "${SKILL_DIR}/scripts/watch.py" "<source-1>" "<source-2>"   # multiple sources in one call
 ```
+
+With more than one source, the report contains one `## Video i/N: <source>` section per video, each with its own `### Report` and its own frame sub-directory (`work/video_1/frames`, `work/video_2/frames`, …) so frames never collide. A single source keeps the original flat layout (`work/frames`).
 
 Optional flags:
 - `--detail transcript|efficient|balanced|token-burner` — fidelity/speed dial. `transcript` = no frames (transcript only, skips video download when captions exist); `efficient` = fast keyframes (cap 50); `balanced` = scene-aware frames (cap 100); `token-burner` = scene-aware, uncapped.
-- `--start T` / `--end T` — focus on a section. Accepts `SS`, `MM:SS`, or `HH:MM:SS`. When either is set, fps auto-scales denser (see "Focusing on a section" below).
+- `--start T` / `--end T` — focus on a section. Accepts `SS`, `MM:SS`, or `HH:MM:SS`. When either is set, fps auto-scales denser (see "Focusing on a section" below). Applied identically to every source when multiple are given.
 - `--timestamps T1,T2,…` — grab a frame at each of these absolute timestamps (`SS`, `MM:SS`, or `HH:MM:SS`). Use this after reading the transcript to capture deictic moments the presenter flags ("look here", "as you can see", "notice this") that visual selection alone may miss. See "Transcript-cue frames" below.
 - `--max-frames N` — override the preset cap for tighter token budget (e.g. `--max-frames 40`)
 - `--resolution W` — change frame width in px (default 512; bump to 1024 only if the user needs to read on-screen text)
@@ -150,6 +153,7 @@ Optional flags:
 - `--whisper groq|openai` — force a specific Whisper backend (default: prefer Groq if both keys exist)
 - `--no-whisper` — disable the Whisper fallback entirely (frames-only if no captions)
 - `--no-dedup` — keep near-duplicate frames. By default a frame-delta pass drops frames that are visually near-identical to the previous kept one (held slides, static screen recordings, paused video) so the frame budget goes to distinct content; the report's **Frames** line notes how many were dropped. Pass this only if the user needs every sampled frame (e.g. judging subtle frame-to-frame motion).
+- `--no-cache` — force a fresh download even if this exact URL was already downloaded earlier. By default, re-asking about the same link (a very common follow-up — "now look at 2:00", "what about the ending?") reuses the cached download from `~/.cache/filaxy-watch/videos/` instead of re-fetching it. The report's **Download** line says `cache hit` when this happened. Cache is keyed by URL (and separately for audio-only vs full-video pulls), so it is safe across sessions and across different `--detail`/`--start`/`--end` values on the same source.
 
 ### Focusing on a section (higher frame rate)
 

@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -37,6 +38,44 @@ MAX_READ_DIMENSION = 1998
 DEDUP_THUMB = 16
 DEDUP_THRESHOLD = 2.0
 SHOWINFO_TS_RE = re.compile(r"pts_time:([0-9.]+)")
+
+
+PROGRESS_INTERVAL = 1.5  # seconds between heartbeat lines — enough to be live, not spammy
+_FRAME_RE = re.compile(r"frame=\s*(\d+)")
+_TIME_RE = re.compile(r"time=(\d+:\d+:\d+\.\d+)")
+
+
+def _run_ffmpeg(cmd: list[str], *, label: str) -> subprocess.CompletedProcess:
+    """Run ffmpeg like ``subprocess.run(cmd, capture_output=True, text=True)``,
+    but stream a throttled progress heartbeat to stderr instead of going silent
+    for the whole call. ffmpeg emits periodic ``frame=... time=...`` stats on
+    its own (no extra flag needed) — this just surfaces them live, at most once
+    every ``PROGRESS_INTERVAL`` seconds, instead of only after the process exits.
+
+    Returns an object with the same ``.returncode``/``.stdout``/``.stderr``
+    shape callers already rely on, so this is a drop-in replacement.
+    """
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+    stderr_lines: list[str] = []
+    last_report = 0.0
+    assert proc.stderr is not None
+    for line in proc.stderr:
+        stderr_lines.append(line)
+        now = time.monotonic()
+        if now - last_report >= PROGRESS_INTERVAL:
+            frame_match = _FRAME_RE.search(line)
+            time_match = _TIME_RE.search(line)
+            if frame_match or time_match:
+                bits = []
+                if frame_match:
+                    bits.append(f"frame {frame_match.group(1)}")
+                if time_match:
+                    bits.append(f"t={time_match.group(1)}")
+                print(f"[filaxy-watch] {label}: {' · '.join(bits)}…", file=sys.stderr)
+                last_report = now
+    proc.wait()
+    stdout_data = proc.stdout.read() if proc.stdout else ""
+    return subprocess.CompletedProcess(cmd, proc.returncode, stdout_data, "".join(stderr_lines))
 
 
 def _scale_filter(resolution: int) -> str:
@@ -197,7 +236,7 @@ def extract(
         output_pattern,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = _run_ffmpeg(cmd, label="extracting frames")
     if result.returncode != 0:
         raise SystemExit(f"ffmpeg frame extraction failed: {result.stderr.strip()}")
 
@@ -261,7 +300,7 @@ def extract_scene_candidates(
         "-q:v", "4",
         output_pattern,
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = _run_ffmpeg(cmd, label="scanning for scene changes")
     if result.returncode != 0:
         raise SystemExit(f"ffmpeg scene extraction failed: {result.stderr.strip()}")
 
@@ -616,7 +655,7 @@ def extract_keyframes(
         "-q:v", "4",
         output_pattern,
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = _run_ffmpeg(cmd, label="decoding keyframes")
     if result.returncode != 0:
         raise SystemExit(f"ffmpeg keyframe extraction failed: {result.stderr.strip()}")
 

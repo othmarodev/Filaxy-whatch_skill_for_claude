@@ -2,7 +2,9 @@
 """/filaxy-watch entry point: download video, extract frames, parse transcript.
 
 Prints a markdown report to stdout listing frame paths + transcript. Claude
-then Reads each frame path to see the video.
+then Reads each frame path to see the video. Accepts one or more sources —
+with more than one, each gets its own numbered section and its own
+sub-directory under the working dir so frames never collide.
 """
 from __future__ import annotations
 
@@ -22,72 +24,13 @@ from transcribe import filter_range, format_transcript, parse_vtt  # noqa: E402
 from whisper import load_api_key, transcribe_video  # noqa: E402
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(
-        prog="filaxy-watch",
-        description="Download a video, extract auto-scaled frames, and surface the transcript.",
-    )
-    ap.add_argument("source", help="Video URL or local file path")
-    ap.add_argument("--max-frames", type=int, default=None, help="Override frame cap")
-    ap.add_argument("--resolution", type=int, default=512, help="Frame width in pixels (default 512)")
-    ap.add_argument("--fps", type=float, default=None, help="Override auto-fps")
-    ap.add_argument(
-        "--detail",
-        choices=["transcript", "efficient", "balanced", "token-burner"],
-        default=None,
-        help="Fidelity/speed dial: transcript (no frames), efficient (fast keyframes, cap 50), "
-             "balanced (scene, cap 100), token-burner (scene, uncapped).",
-    )
-    ap.add_argument(
-        "--timestamps",
-        type=str,
-        default=None,
-        help="Comma-separated absolute timestamps (SS, MM:SS, HH:MM:SS) to grab a frame at, "
-             "e.g. transcript-flagged 'look here' moments. Added on top of the detail frames "
-             "(reserved against the cap); with --detail transcript these become the only frames.",
-    )
-    ap.add_argument("--start", type=str, default=None, help="Range start (SS, MM:SS, or HH:MM:SS)")
-    ap.add_argument("--end", type=str, default=None, help="Range end (SS, MM:SS, or HH:MM:SS)")
-    ap.add_argument("--out-dir", type=str, default=None, help="Working directory (default: tmp)")
-    ap.add_argument(
-        "--no-whisper",
-        action="store_true",
-        help="Disable Whisper fallback. Report frames-only if no captions available.",
-    )
-    ap.add_argument(
-        "--whisper",
-        choices=["groq", "openai"],
-        default=None,
-        help="Force a specific Whisper backend. Default: prefer Groq, fall back to OpenAI.",
-    )
-    ap.add_argument(
-        "--no-dedup",
-        action="store_true",
-        help="Disable near-duplicate frame removal. Keeps visually identical "
-             "frames (static screen recordings, held slides) instead of collapsing them.",
-    )
-    args = ap.parse_args()
-
-    config = get_config()
-    detail = args.detail or str(config["detail"])
-    configured_cap = frame_cap(detail)
-    if args.max_frames is not None:
-        max_frames = args.max_frames
-    else:
-        max_frames = configured_cap
-    if max_frames is not None and max_frames < 1:
-        raise SystemExit("--max-frames must be greater than zero")
-    budget_cap = max_frames if max_frames is not None else 100
-    cue_timestamps = parse_timestamps(args.timestamps)
-
-    if args.out_dir:
-        work = Path(args.out_dir).expanduser().resolve()
-    else:
-        work = Path(tempfile.mkdtemp(prefix="watch-"))
+def process_source(source: str, args: argparse.Namespace, work: Path, detail: str, max_frames: int | None, budget_cap: int, cue_timestamps: list[float], report_heading: str = "# watch: video report") -> None:
+    """Run the full download → frames → transcript pipeline for one source and
+    print its markdown report section to stdout."""
     work.mkdir(parents=True, exist_ok=True)
     print(f"[watch] working dir: {work}", file=sys.stderr)
 
-    url_source = is_url(args.source)
+    url_source = is_url(source)
     dl: dict = {"subtitle_path": None, "info": {}, "downloaded": False}
     transcript_segments: list[dict] = []
     transcript_text: str | None = None
@@ -96,7 +39,7 @@ def main() -> int:
 
     if url_source:
         print("[watch] checking metadata/captions via yt-dlp…", file=sys.stderr)
-        dl = fetch_captions(args.source, work / "download")
+        dl = fetch_captions(source, work / "download")
         if dl.get("subtitle_path"):
             try:
                 transcript_segments = parse_vtt(dl["subtitle_path"])
@@ -119,13 +62,14 @@ def main() -> int:
                 file=sys.stderr,
             )
             dl = download(
-                args.source,
+                source,
                 work / "download",
                 audio_only=audio_only,
+                use_cache=not args.no_cache,
             )
         else:
             print("[watch] using local file…", file=sys.stderr)
-            dl = download(args.source, work / "download")
+            dl = download(source, work / "download")
         video_path = dl["video_path"]
 
     meta = get_metadata(video_path) if video_path else {
@@ -268,9 +212,11 @@ def main() -> int:
     info = dl.get("info") or {}
 
     print()
-    print("# watch: video report")
+    print(report_heading)
     print()
-    print(f"- **Source:** {args.source}")
+    print(f"- **Source:** {source}")
+    if dl.get("cached"):
+        print("- **Download:** cache hit — reused a previous download, no re-download")
     if info.get("title"):
         print(f"- **Title:** {info['title']}")
     if info.get("uploader"):
@@ -385,6 +331,101 @@ def main() -> int:
     print()
     print("---")
     print(f"_Work dir: `{work}` — delete when done._")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        prog="filaxy-watch",
+        description="Download one or more videos, extract auto-scaled frames, and surface the transcript.",
+    )
+    ap.add_argument(
+        "sources",
+        nargs="+",
+        help="One or more video URLs or local file paths. With more than one, "
+             "each gets its own numbered report section and its own sub-directory "
+             "under the working dir.",
+    )
+    ap.add_argument("--max-frames", type=int, default=None, help="Override frame cap")
+    ap.add_argument("--resolution", type=int, default=512, help="Frame width in pixels (default 512)")
+    ap.add_argument("--fps", type=float, default=None, help="Override auto-fps")
+    ap.add_argument(
+        "--detail",
+        choices=["transcript", "efficient", "balanced", "token-burner"],
+        default=None,
+        help="Fidelity/speed dial: transcript (no frames), efficient (fast keyframes, cap 50), "
+             "balanced (scene, cap 100), token-burner (scene, uncapped).",
+    )
+    ap.add_argument(
+        "--timestamps",
+        type=str,
+        default=None,
+        help="Comma-separated absolute timestamps (SS, MM:SS, HH:MM:SS) to grab a frame at, "
+             "e.g. transcript-flagged 'look here' moments. Added on top of the detail frames "
+             "(reserved against the cap); with --detail transcript these become the only frames. "
+             "Applied identically to every source when multiple are given.",
+    )
+    ap.add_argument("--start", type=str, default=None, help="Range start (SS, MM:SS, or HH:MM:SS)")
+    ap.add_argument("--end", type=str, default=None, help="Range end (SS, MM:SS, or HH:MM:SS)")
+    ap.add_argument("--out-dir", type=str, default=None, help="Working directory (default: tmp)")
+    ap.add_argument(
+        "--no-whisper",
+        action="store_true",
+        help="Disable Whisper fallback. Report frames-only if no captions available.",
+    )
+    ap.add_argument(
+        "--whisper",
+        choices=["groq", "openai"],
+        default=None,
+        help="Force a specific Whisper backend. Default: prefer Groq, fall back to OpenAI.",
+    )
+    ap.add_argument(
+        "--no-dedup",
+        action="store_true",
+        help="Disable near-duplicate frame removal. Keeps visually identical "
+             "frames (static screen recordings, held slides) instead of collapsing them.",
+    )
+    ap.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Force a fresh download even if this URL was already downloaded before. "
+             "By default, re-asking about the same link reuses the cached download.",
+    )
+    args = ap.parse_args()
+
+    config = get_config()
+    detail = args.detail or str(config["detail"])
+    configured_cap = frame_cap(detail)
+    if args.max_frames is not None:
+        max_frames = args.max_frames
+    else:
+        max_frames = configured_cap
+    if max_frames is not None and max_frames < 1:
+        raise SystemExit("--max-frames must be greater than zero")
+    budget_cap = max_frames if max_frames is not None else 100
+    cue_timestamps = parse_timestamps(args.timestamps)
+
+    if args.out_dir:
+        root = Path(args.out_dir).expanduser().resolve()
+    else:
+        root = Path(tempfile.mkdtemp(prefix="watch-"))
+    root.mkdir(parents=True, exist_ok=True)
+
+    multi = len(args.sources) > 1
+    if multi:
+        print(f"[watch] {len(args.sources)} videos queued", file=sys.stderr)
+
+    for i, source in enumerate(args.sources, start=1):
+        # Single source keeps the original flat layout (work/frames, work/download)
+        # unchanged; multiple sources get their own numbered sub-directory so
+        # frame files from different videos never collide.
+        work = root / f"video_{i}" if multi else root
+        if multi:
+            print()
+            print(f"## Video {i}/{len(args.sources)}: {source}")
+            heading = "### Report"
+        else:
+            heading = "# watch: video report"
+        process_source(source, args, work, detail, max_frames, budget_cap, cue_timestamps, report_heading=heading)
 
     return 0
 

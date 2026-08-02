@@ -206,6 +206,9 @@ You don't "turn it on" per conversation — you just type the command wherever y
 
 # Zoom into a specific section (denser frames, cheaper):
 /filaxy-watch https://youtu.be/abc --start 2:15 --end 2:45
+
+# Watch more than one video in a single call — each gets its own report section:
+/filaxy-watch https://youtu.be/abc https://youtu.be/def compare how each one opens
 ```
 
 Extra flags (passed straight to the bundled script):
@@ -218,6 +221,7 @@ Extra flags (passed straight to the bundled script):
 - `--whisper groq|openai` — force a specific Whisper backend
 - `--no-whisper` — frames only, no transcription
 - `--no-dedup` — keep near-duplicate frames
+- `--no-cache` — force a fresh download even if you already asked about this exact URL before
 - `--out-dir DIR` — keep working files in a specific folder
 
 ---
@@ -251,7 +255,7 @@ Extra flags (passed straight to the bundled script):
 ├── hooks/                        # Claude Code SessionStart status hook
 ├── .claude-plugin/                # plugin.json + marketplace.json (Claude Code)
 ├── .codex-plugin/                 # manifest for Codex/Cursor/other Agent Skills hosts
-├── tests/                        # pytest suite — 71 tests, no network required
+├── tests/                        # pytest suite — 77 tests, no network required
 └── LICENSE                       # MIT
 ```
 
@@ -261,16 +265,26 @@ Extra flags (passed straight to the bundled script):
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install pytest
-.venv/bin/pytest -q                              # 71 tests, ffmpeg required, no network
+.venv/bin/pytest -q                              # 77 tests, ffmpeg required, no network
 
 bash skills/filaxy-watch/scripts/build-skill.sh   # → dist/filaxy-watch.skill
 ```
 
 ---
 
+## What's new in this fork
+
+Filaxy Watch started as a straight rename of the upstream project (71/71 tests passing, zero behavior change) and then added three concrete improvements on top:
+
+1. **Download cache.** Ask about the same URL twice — a very common follow-up ("now check the ending", "what about around 5:00?") — and the second call skips yt-dlp entirely, reusing the video already downloaded to `~/.cache/filaxy-watch/videos/`. Force a fresh pull with `--no-cache`.
+2. **Live extraction progress.** ffmpeg already reports `frame=`/`time=` stats as it works; this fork streams and throttles them into a clean heartbeat line (at most every 1.5s) instead of the process going silent for the whole call. yt-dlp downloads similarly switched to `--newline --progress-delta 2` for clean periodic updates instead of a raw carriage-return meter.
+3. **Multiple videos, one call.** `/filaxy-watch <video-1> <video-2> ...` now works — each video gets its own numbered report section and its own frame sub-directory, so nothing collides.
+
+All three are covered by new tests (77/77 passing total) and don't change the single-video default path at all — a plain `/filaxy-watch <url>` behaves exactly as it did in the upstream project.
+
 ## Credits
 
-`Filaxy Watch` is a rebrand and fork of **[`claude-video` / `/watch`](https://github.com/bradautomates/claude-video)** by **Brad Bonanno** ([@bradbonanno](https://www.youtube.com/@bradbonanno)) — released under the MIT License. All the core engineering (the yt-dlp/ffmpeg orchestration, the frame-budget logic, the dedup algorithm, the Whisper fallback) is his original work. This fork renames the skill and its config paths under the Filaxy brand, adds this documentation, and ships a ready-to-download `.skill` file — the underlying behavior is unchanged and fully tested (71/71 tests passing) against the original.
+`Filaxy Watch` is a rebrand and fork of **[`claude-video` / `/watch`](https://github.com/bradautomates/claude-video)** by **Brad Bonanno** ([@bradbonanno](https://www.youtube.com/@bradbonanno)) — released under the MIT License. The core engineering this fork builds on (the yt-dlp/ffmpeg orchestration, the frame-budget logic, the dedup algorithm, the Whisper fallback) is his original work. This fork renames the skill and its config paths under the Filaxy brand, adds this documentation, ships a ready-to-download `.skill` file, and layers on the three improvements above.
 
 If this saves you time, go check out the original project and the author's channel.
 

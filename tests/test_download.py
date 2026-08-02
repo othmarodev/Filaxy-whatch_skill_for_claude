@@ -59,6 +59,8 @@ def test_download_url_requests_english_only(monkeypatch, tmp_path):
     calls = _capture_argv(monkeypatch)
     # _pick_video returns None with no real file, which raises SystemExit after
     # the yt-dlp argv is already built — that's all we need to inspect.
+    # cache_dir is redirected under tmp_path so the test never touches the
+    # real ~/.cache/filaxy-watch on the machine running it.
     with pytest.raises(SystemExit):
-        download.download_url(URL, tmp_path / "download")
+        download.download_url(URL, tmp_path / "download", cache_dir=tmp_path / "cache")
     _assert_english_only(_sub_langs(calls[0]))

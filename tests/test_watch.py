@@ -83,3 +83,33 @@ def test_no_dedup_preserves_static_frames(static_clip: Path):
     out = _run(static_clip, "--no-dedup")
     assert "near-duplicate" not in out
     assert _frame_lines(out) > 1
+
+
+def test_multi_source_produces_one_section_per_video(cut_clip: Path, static_clip: Path, tmp_path: Path):
+    # _run only accepts one clip positionally; invoke the CLI directly for two.
+    proc_out = _run2(cut_clip, static_clip, "--detail", "efficient", out_dir=tmp_path / "multi")
+    assert "## Video 1/2:" in proc_out
+    assert "## Video 2/2:" in proc_out
+    assert proc_out.count("### Report") == 2
+    # Each video's frames land in its own numbered sub-directory, never colliding.
+    assert (tmp_path / "multi" / "video_1" / "frames").is_dir()
+    assert (tmp_path / "multi" / "video_2" / "frames").is_dir()
+
+
+def _run2(clip_a: Path, clip_b: Path, *args: str, out_dir: Path) -> str:
+    env = dict(os.environ)
+    env.pop("FILAXY_WATCH_DETAIL", None)
+    proc = subprocess.run(
+        [sys.executable, str(WATCH), str(clip_a), str(clip_b), "--no-whisper", "--out-dir", str(out_dir), *args],
+        capture_output=True, text=True, env=env,
+    )
+    assert proc.returncode == 0, proc.stderr
+    return proc.stdout
+
+
+def test_single_source_keeps_flat_layout(cut_clip: Path, tmp_path: Path):
+    out_dir = tmp_path / "single"
+    out = _run(cut_clip, "--detail", "efficient", "--out-dir", str(out_dir))
+    assert "## Video 1/1" not in out  # single source: no multi-video wrapper
+    assert "# watch: video report" in out
+    assert (out_dir / "frames").is_dir()  # flat layout, not out_dir/video_1/frames

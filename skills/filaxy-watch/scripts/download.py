@@ -6,12 +6,19 @@ transcribe.py can parse them without needing Whisper.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
+
+SCRIPT_DIR = Path(__file__).parent.resolve()
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from config import CACHE_DIR  # noqa: E402
 
 
 VIDEO_EXTS = {".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi", ".flv", ".wmv"}
@@ -112,16 +119,57 @@ def _read_info(info_path: Path, url: str) -> dict:
     return info
 
 
+def cache_key(url: str, audio_only: bool = False) -> str:
+    """Stable cache key for a URL — audio-only and full-video pulls of the same
+    URL are kept separate since they're different downloads."""
+    kind = "audio" if audio_only else "video"
+    return hashlib.sha256(f"{kind}:{url}".encode("utf-8")).hexdigest()[:20]
+
+
+def _cached_result(cache_path: Path, url: str) -> dict | None:
+    """Return a download() result reusing a cache hit, or None on a miss."""
+    video = _pick_video(cache_path)
+    if video is None:
+        return None
+    subtitle = _pick_subtitle(cache_path)
+    info = _read_info(cache_path / "video.info.json", url)
+    return {
+        "video_path": str(video),
+        "subtitle_path": str(subtitle) if subtitle else None,
+        "info": info or {"url": url},
+        "downloaded": False,
+        "cached": True,
+    }
+
+
 def download_url(
     url: str,
     out_dir: Path,
     audio_only: bool = False,
+    cache_dir: Path | None = None,
+    use_cache: bool = True,
 ) -> dict:
     if shutil.which("yt-dlp") is None:
         raise SystemExit("yt-dlp is not installed. Install with: brew install yt-dlp")
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    output_template = str(out_dir / "video.%(ext)s")
+    if use_cache:
+        cache_root = cache_dir if cache_dir is not None else CACHE_DIR
+        cache_path = cache_root / cache_key(url, audio_only)
+        if cache_path.exists():
+            hit = _cached_result(cache_path, url)
+            if hit is not None:
+                print(
+                    f"[watch] cache hit for this URL — reusing {hit['video_path']} "
+                    "(skip re-download; pass --no-cache to force a fresh pull)",
+                    file=sys.stderr,
+                )
+                return hit
+        target_dir = cache_path
+    else:
+        target_dir = out_dir
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_template = str(target_dir / "video.%(ext)s")
 
     fmt = "ba/bestaudio" if audio_only else "bv*[height<=720]+ba/b[height<=720]/bv+ba/b"
     cmd = [
@@ -129,6 +177,10 @@ def download_url(
         "-N", "8",
         "-f", fmt,
         "--merge-output-format", "mp4",
+        # Real, non-spammy progress: one clean line at most every 2s instead of
+        # a carriage-return meter that dumps as hundreds of lines once captured.
+        "--newline",
+        "--progress-delta", "2",
         "--write-info-json",
         "--write-subs",
         "--write-auto-subs",
@@ -145,20 +197,21 @@ def download_url(
     # yt-dlp may exit non-zero if a subtitle variant fails (e.g. 429) even when
     # the video itself downloaded fine. Treat "video file present" as success.
     result = subprocess.run(cmd, stdout=sys.stderr, stderr=sys.stderr)
-    video = _pick_video(out_dir)
+    video = _pick_video(target_dir)
     if video is None:
         raise SystemExit(
-            f"yt-dlp did not produce a video file in {out_dir} (exit {result.returncode})"
+            f"yt-dlp did not produce a video file in {target_dir} (exit {result.returncode})"
         )
 
-    subtitle = _pick_subtitle(out_dir)
-    info = _read_info(out_dir / "video.info.json", url)
+    subtitle = _pick_subtitle(target_dir)
+    info = _read_info(target_dir / "video.info.json", url)
 
     return {
         "video_path": str(video),
         "subtitle_path": str(subtitle) if subtitle else None,
         "info": info or {"url": url},
         "downloaded": True,
+        "cached": False,
     }
 
 
@@ -166,9 +219,11 @@ def download(
     source: str,
     out_dir: Path,
     audio_only: bool = False,
+    cache_dir: Path | None = None,
+    use_cache: bool = True,
 ) -> dict:
     if is_url(source):
-        return download_url(source, out_dir, audio_only=audio_only)
+        return download_url(source, out_dir, audio_only=audio_only, cache_dir=cache_dir, use_cache=use_cache)
     return resolve_local(source)
 
 

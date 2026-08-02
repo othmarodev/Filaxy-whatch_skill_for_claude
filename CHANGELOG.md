@@ -1,6 +1,16 @@
 # Changelog
 
-All notable changes to `/watch` are documented here.
+All notable changes to `/filaxy-watch` are documented here. Entries at and above 0.3.0 are Filaxy Watch's own; earlier entries are inherited unchanged from the upstream project this was forked from (`claude-video`/`/watch` by Brad Bonanno).
+
+## [0.3.0] — 2026-08-01 (Filaxy Watch fork)
+
+### Added
+- **Download cache.** Re-asking about a URL you already downloaded (a very common follow-up pattern — "now look at 2:00", "what else happens?") reuses the cached download from `~/.cache/filaxy-watch/videos/` instead of re-fetching it from scratch. Keyed by URL, kept separate for audio-only vs full-video pulls. Pass `--no-cache` to force a fresh download.
+- **Live extraction progress.** ffmpeg's own `frame=`/`time=` stats are now streamed and surfaced as a throttled one-line heartbeat (at most every 1.5s) during frame extraction and scene scanning, instead of the process going silent until it finishes. yt-dlp downloads also switched to `--newline --progress-delta 2` for clean periodic lines instead of a raw carriage-return meter.
+- **Multiple videos in one call.** `watch.py <source-1> <source-2> ...` now accepts any number of sources. Each gets its own `## Video i/N` report section and its own frame sub-directory (`work/video_1/frames`, `work/video_2/frames`, …), so nothing collides. A single source keeps the original flat `work/frames` layout unchanged.
+
+### Changed
+- Rebranded as Filaxy Watch: skill name, config directory (`~/.config/filaxy-watch/`), and all plugin manifests. Underlying engine (frame budgeting, scene/keyframe extraction, dedup, Whisper fallback) is functionally identical to upstream `claude-video` v0.2.0 — verified against the full pytest suite (71/71 passing before these additions, 77/77 after).
 
 ## [0.2.0] — 2026-06-29
 

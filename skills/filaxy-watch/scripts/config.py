@@ -9,6 +9,11 @@ from pathlib import Path
 CONFIG_DIR = Path.home() / ".config" / "filaxy-watch"
 CONFIG_FILE = CONFIG_DIR / ".env"
 
+# Where downloaded videos/audio are cached across invocations, keyed by URL.
+# Re-asking about the same link (a common `/filaxy-watch` follow-up pattern)
+# skips the yt-dlp download entirely instead of re-fetching from scratch.
+CACHE_DIR = Path.home() / ".cache" / "filaxy-watch" / "videos"
+
 DEFAULT_DETAIL = "balanced"
 
 DETAILS = {"transcript", "efficient", "balanced", "token-burner"}
