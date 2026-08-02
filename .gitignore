@@ -9,8 +9,6 @@ htmlcov/
 .idea/
 .vscode/
 
-# build artifact from scripts/build-skill.sh
-/dist/
 
 # local Claude Code settings
 .claude/settings.local.json
