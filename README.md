@@ -18,6 +18,20 @@ Paste a YouTube link, a TikTok, a Loom, or a local screen recording, ask a quest
 
 ---
 
+## Why this exists — what Claude can't do with video on its own
+
+This isn't a workaround for a hypothetical problem. As of today, Claude — on any surface (claude.ai, Claude Code, the API) — has real, specific gaps when it comes to video:
+
+- **No native video modality.** Claude's multimodal input understands images (and PDFs). It does not decode `.mp4`/`.mov`/`.webm` files, and there's no "attach a video" path that gives it frame-by-frame vision the way image attachments do.
+- **No built-in downloader.** Even inside Claude Code, where Claude can run shell commands, it doesn't inherently know how to pull a YouTube/TikTok/Vimeo/X video correctly — sites rotate player logic, throttle, geoblock, and require a maintained tool (`yt-dlp`) with the right flags, not a naive `curl`.
+- **No hearing.** Claude cannot listen to an audio track. Spoken content only becomes usable to it once it's turned into text — either free captions or a Whisper transcription pass.
+- **No sense of "how many frames is enough."** Even if you handed Claude one screenshot, it has no built-in logic for *how* to sample an entire timeline — how many frames a 5-minute video needs versus a 45-minute one, when to prefer scene-cuts over fixed intervals, or when two frames are so similar they're wasting your context budget.
+- **A real token ceiling.** Every frame Claude reads costs image tokens. Nothing about Claude's default behavior protects you from naively extracting one frame per second of a long video and blowing through your context on redundant near-duplicates.
+
+`Filaxy Watch` exists to close exactly those five gaps with plain, inspectable code — `yt-dlp` for the download problem, `ffmpeg` for the sampling problem, Whisper/captions for the hearing problem, and a duration-aware frame-budget + dedup algorithm for the token-ceiling problem. Claude still does the actual *seeing* and *understanding* — this skill's only job is getting real frames and a real transcript in front of it.
+
+---
+
 ## Explain it to me like I'm five
 
 Imagine you hand your friend a video and say "hey, what's wrong here?" Your friend can't answer that just by reading the video's *title*. They have to actually **watch** it — see what's on screen, and hear what's being said.
