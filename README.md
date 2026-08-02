@@ -102,18 +102,30 @@ A **dedup pass** runs by default before the budget is spent: near-identical fram
 
 ## Install
 
-### Option A — Claude Code (plugin, recommended)
+### Option A — Claude Code (plugin, recommended), step by step from zero
 
-```bash
-/plugin marketplace add othmarodev/Filaxy-whatch_skill_for_claude
-/plugin install filaxy-watch@filaxy-watch
-```
+1. Open a terminal and start Claude Code (just type `claude` if you don't already have a session open).
+2. Register this repo as a plugin marketplace — you only do this once, ever:
+   ```bash
+   /plugin marketplace add othmarodev/Filaxy-whatch_skill_for_claude
+   ```
+3. Install the plugin from that marketplace:
+   ```bash
+   /plugin install filaxy-watch@filaxy-watch
+   ```
+4. That's it — **no restart needed, and it isn't tied to the current project.** Plugins install at the user level, so `/filaxy-watch` now works in *every* Claude Code session on this machine: a brand-new terminal, a different project folder, a totally unrelated chat. Open any window, in any folder, and type:
+   ```
+   /filaxy-watch https://youtu.be/dQw4w9WgXcQ what happens at the 30 second mark?
+   ```
+5. First call only: it'll walk you through installing `ffmpeg`/`yt-dlp` if they're missing (see [First run](#first-run) below). Every call after that just works.
 
 Update later with:
 
 ```bash
 /plugin update filaxy-watch@filaxy-watch
 ```
+
+Uninstall with `/plugin uninstall filaxy-watch@filaxy-watch`.
 
 ### Option B — claude.ai (web), step by step for a first-timer
 
@@ -162,7 +174,15 @@ It also asks (once) whether you want to set up a **Whisper API key** for videos 
 
 ---
 
-## Usage
+## Usage — calling it from any chat window
+
+Once installed (Option A or C), `/filaxy-watch` is **global** — it is not scoped to one project, one repo, or one conversation. It shows up as a slash command in:
+
+- Any Claude Code session, in any project directory, on this machine.
+- A brand-new chat you open five seconds from now, or one you open next month.
+- Both interactive sessions and any automated/headless run of Claude Code, since plugins load at startup regardless of who's driving.
+
+You don't "turn it on" per conversation — you just type the command wherever you happen to be:
 
 ```bash
 /filaxy-watch https://youtu.be/dQw4w9WgXcQ what happens at the 30 second mark?
